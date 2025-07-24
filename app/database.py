@@ -1,15 +1,15 @@
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.orm import DeclarativeBase
 
-from config import DATABASE_URL
+# Создание подкласса DeclarativeBase
+class Base(DeclarativeBase):
+    pass
 
-engine = create_async_engine(DATABASE_URL)
-SessionLocal = sessionmaker(bind= engine, class_=AsyncSession, expire_on_commit=False)
-Base = DeclarativeBase()
+DATABASE_URL = "postgresql+asyncpg://postgres:qwerty12345@localhost:5432/portfolio"
+engine = create_async_engine(DATABASE_URL, echo=True)  # echo=True для отладки
+SessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 
-def get_db():
-    db = SessionLocal()
-    try:
+async def get_db():
+    async with SessionLocal() as db:
         yield db
-    finally:
-        db.close()
+        await db.close()

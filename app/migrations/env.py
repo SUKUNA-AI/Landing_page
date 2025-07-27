@@ -4,8 +4,8 @@ import os
 from os.path import abspath, dirname, join
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
-
-from database import DATABASE_URL, Base
+from app.config import settings
+from database import Base
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -14,7 +14,7 @@ from alembic import context
 config = context.config
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
-config.set_main_option("sqlalchemy.url", f"{DATABASE_URL}?async_fallback=True")
+config.set_main_option("sqlalchemy.url", f"{settings.DATABASE_URL}?async_fallback=True")
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

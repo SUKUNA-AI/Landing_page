@@ -1,21 +1,18 @@
 from pydantic import BaseModel
 from typing import Optional
-import datetime
 
-class TaskCreate(BaseModel):
+class SkillCreate(BaseModel):
     user_id: int
-    title: str
+    skill_name: str
     description: Optional[str] = None
-    status: str
+    proficiency_level: int
 
-class TaskResponse(BaseModel):
+class SkillResponse(BaseModel):
     id: int
     user_id: int
-    title: str
+    skill_name: str
     description: Optional[str]
-    status: str
-    created_at: datetime.datetime
-    updated_at: datetime.datetime
+    proficiency_level: int
 
     class Config:
         from_attributes = True

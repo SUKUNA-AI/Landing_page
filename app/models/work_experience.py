@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, Date
 from ..database import Base
 
 class WorkExperience(Base):
-    __tablename__ = "WorkExperience"
+    __tablename__ = "workexperience"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("Users.id"), nullable=False)
     company = Column(String(100), nullable=False)

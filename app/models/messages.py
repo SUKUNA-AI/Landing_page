@@ -3,7 +3,7 @@ from ..database import Base
 from datetime import datetime
 
 class Message(Base):
-    __tablename__ = "Messages"
+    __tablename__ = "messages"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     email = Column(String(100), nullable=False)

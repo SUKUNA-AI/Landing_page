@@ -3,7 +3,7 @@ from ..database import Base
 from datetime import datetime
 
 class MLPrediction(Base):
-    __tablename__ = "MLPredictions"
+    __tablename__ = "mlpredictions"
     id = Column(Integer, primary_key=True, index=True)
     message_id = Column(Integer, ForeignKey("Messages.id"))
     input_text = Column(String, nullable=False)

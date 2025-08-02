@@ -1,4 +1,4 @@
-CREATE TABLE Users (
+CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
@@ -6,9 +6,9 @@ CREATE TABLE Users (
     role VARCHAR(20) NOT NULL
 );
 
-CREATE TABLE Profile (
+CREATE TABLE profile (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES Users(id),
+    user_id INTEGER NOT NULL REFERENCES users(id),
     name VARCHAR(100) NOT NULL,
     bio TEXT,
     photo_url VARCHAR(255),
@@ -18,17 +18,17 @@ CREATE TABLE Profile (
     resume_url VARCHAR(255)
 );
 
-CREATE TABLE Skills (
+CREATE TABLE skills (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES Users(id),
+    user_id INTEGER NOT NULL REFERENCES users(id),
     skill_name VARCHAR(50) NOT NULL,
     description TEXT,
     proficiency_level INTEGER CHECK (proficiency_level >= 1 AND proficiency_level <= 5)
 );
 
-CREATE TABLE Projects (
+CREATE TABLE projects (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES Users(id),
+    user_id INTEGER NOT NULL REFERENCES users(id),
     title VARCHAR(100) NOT NULL,
     description TEXT,
     image_url VARCHAR(255),
@@ -36,32 +36,32 @@ CREATE TABLE Projects (
     date_completed DATE
 );
 
-CREATE TABLE BlogPosts (
+CREATE TABLE blogposts (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES Users(id),
+    user_id INTEGER NOT NULL REFERENCES users(id),
     title VARCHAR(100) NOT NULL,
     content TEXT NOT NULL,
     date_published TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE Tags (
+CREATE TABLE tags (
     id SERIAL PRIMARY KEY,
     tag_name VARCHAR(50) NOT NULL UNIQUE
 );
 
-CREATE TABLE PostTags (
-    post_id INTEGER NOT NULL REFERENCES BlogPosts(id),
-    tag_id INTEGER NOT NULL REFERENCES Tags(id),
+CREATE TABLE posttags (
+    post_id INTEGER NOT NULL REFERENCES blogposts(id),
+    tag_id INTEGER NOT NULL REFERENCES tags(id),
     PRIMARY KEY (post_id, tag_id)
 );
 
-CREATE TABLE ProjectTags (
-    project_id INTEGER NOT NULL REFERENCES Projects(id),
-    tag_id INTEGER NOT NULL REFERENCES Tags(id),
+CREATE TABLE projecttags (
+    project_id INTEGER NOT NULL REFERENCES projects(id),
+    tag_id INTEGER NOT NULL REFERENCES tags(id),
     PRIMARY KEY (project_id, tag_id)
 );
 
-CREATE TABLE Messages (
+CREATE TABLE messages (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL,
@@ -70,45 +70,45 @@ CREATE TABLE Messages (
     source VARCHAR(20) NOT NULL
 );
 
-CREATE TABLE SocialMedia (
+CREATE TABLE socialmedia (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES Users(id),
+    user_id INTEGER NOT NULL REFERENCES users(id),
     platform_name VARCHAR(50) NOT NULL,
     profile_url VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE Testimonials (
+CREATE TABLE testimonials (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES Users(id),
+    user_id INTEGER NOT NULL REFERENCES users(id),
     quote TEXT NOT NULL,
     author VARCHAR(100) NOT NULL,
     date DATE
 );
 
-CREATE TABLE TelegramSubscribers (
+CREATE TABLE telegramsubscribers (
     id SERIAL PRIMARY KEY,
     telegram_user_id VARCHAR(50) NOT NULL UNIQUE,
     subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE SubscriberPreferences (
+CREATE TABLE subscriberpreferences (
     id SERIAL PRIMARY KEY,
-    telegram_user_id VARCHAR(50) NOT NULL REFERENCES TelegramSubscribers(telegram_user_id),
+    telegram_user_id VARCHAR(50) NOT NULL REFERENCES telegramsubscribers(telegram_user_id),
     notification_type VARCHAR(50) NOT NULL,
     is_enabled BOOLEAN DEFAULT TRUE
 );
 
-CREATE TABLE Polls (
+CREATE TABLE polls (
     id SERIAL PRIMARY KEY,
-    telegram_user_id VARCHAR(50) NOT NULL REFERENCES TelegramSubscribers(telegram_user_id),
+    telegram_user_id VARCHAR(50) NOT NULL REFERENCES telegramsubscribers(telegram_user_id),
     question TEXT NOT NULL,
     answer TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE Education (
+CREATE TABLE education (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES Users(id),
+    user_id INTEGER NOT NULL REFERENCES users(id),
     institution VARCHAR(100) NOT NULL,
     degree VARCHAR(100),
     field_of_study VARCHAR(100),
@@ -116,9 +116,9 @@ CREATE TABLE Education (
     end_date DATE
 );
 
-CREATE TABLE WorkExperience (
+CREATE TABLE workexperience (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES Users(id),
+    user_id INTEGER NOT NULL REFERENCES users(id),
     company VARCHAR(100) NOT NULL,
     position VARCHAR(100) NOT NULL,
     description TEXT,
@@ -126,7 +126,7 @@ CREATE TABLE WorkExperience (
     end_date DATE
 );
 
-CREATE TABLE Analytics (
+CREATE TABLE analytics (
     id SERIAL PRIMARY KEY,
     page_url VARCHAR(255) NOT NULL,
     visit_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -137,9 +137,9 @@ CREATE TABLE Analytics (
     duration INTEGER
 );
 
-CREATE TABLE Tasks (
+CREATE TABLE tasks (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES Users(id),
+    user_id INTEGER NOT NULL REFERENCES users(id),
     title VARCHAR(100) NOT NULL,
     description TEXT,
     status VARCHAR(20) NOT NULL,
@@ -147,15 +147,15 @@ CREATE TABLE Tasks (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE MLPredictions (
+CREATE TABLE mlpredictions (
     id SERIAL PRIMARY KEY,
-    message_id INTEGER REFERENCES Messages(id),
+    message_id INTEGER REFERENCES messages(id),
     input_text TEXT NOT NULL,
     prediction TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Индексы для оптимизации
-CREATE INDEX idx_analytics_visit_time ON Analytics(visit_time);
-CREATE INDEX idx_tasks_status ON Tasks(status);
-CREATE INDEX idx_messages_date_sent ON Messages(date_sent);
+CREATE INDEX idx_analytics_visit_time ON analytics(visit_time);
+CREATE INDEX idx_tasks_status ON tasks(status);
+CREATE INDEX idx_messages_date_sent ON messages(date_sent);

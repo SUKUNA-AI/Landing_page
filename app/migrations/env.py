@@ -4,10 +4,11 @@ import os
 from os.path import abspath, dirname, join
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
-from config import settings
-from database import Base
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+from app.config import settings
+from app.database import Base
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 
 from alembic import context
 

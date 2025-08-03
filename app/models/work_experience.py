@@ -4,7 +4,7 @@ from ..database import Base
 class WorkExperience(Base):
     __tablename__ = "workexperience"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("Users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     company = Column(String(100), nullable=False)
     position = Column(String(100), nullable=False)
     description = Column(String)

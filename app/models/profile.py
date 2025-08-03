@@ -4,7 +4,7 @@ from ..database import Base
 class Profile(Base):
     __tablename__ = "profile"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("Users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     name = Column(String(100), nullable=False)
     bio = Column(String)
     photo_url = Column(String(255))

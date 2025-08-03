@@ -3,24 +3,24 @@ from typing import Optional
 
 class ProfileCreate(BaseModel):
     user_id: int
-    name: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     bio: Optional[str] = None
-    photo_url: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    address: Optional[str] = None
-    resume_url: Optional[str] = None
+    avatar_url: Optional[str] = None
+
+class ProfileUpdate(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    bio: Optional[str] = None
+    avatar_url: Optional[str] = None
 
 class ProfileResponse(BaseModel):
     id: int
     user_id: int
-    name: str
-    bio: Optional[str]
-    photo_url: Optional[str]
-    email: Optional[str]
-    phone: Optional[str]
-    address: Optional[str]
-    resume_url: Optional[str]
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    bio: Optional[str] = None
+    avatar_url: Optional[str] = None
 
     class Config:
         from_attributes = True

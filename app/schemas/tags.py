@@ -1,11 +1,15 @@
 from pydantic import BaseModel
+from typing import Optional
 
 class TagCreate(BaseModel):
-    tag_name: str
+    name: str
+
+class TagUpdate(BaseModel):
+    name: Optional[str] = None
 
 class TagResponse(BaseModel):
     id: int
-    tag_name: str
+    name: str
 
     class Config:
         from_attributes = True

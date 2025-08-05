@@ -43,8 +43,9 @@ from .models import (
     ml_predictions as models_ml_predictions,
     tasks as models_tasks
 )
+from .auth import oauth2_scheme  # Импортируем oauth2_scheme
 
-app = FastAPI(title="Landing Page API", version="1.0.0")
+app = FastAPI(title="Landing Page API", version="1.0.0", dependencies=[Depends(oauth2_scheme)])
 
 # Подключение роутеров
 app.include_router(endpoints_users.router)

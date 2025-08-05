@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     DB_PASS: str
     DB_NAME: str
     DATABASE_URL: str | None = None
+    JWT_SECRET_KEY: str = "your-secret-key-change-this"  # Секретный ключ для JWT
+    QWEN_API_KEY: str = "your-qwen-api-key"  # API-ключ для Qwen
 
     @model_validator(mode='after')
     def get_database_url(self):

@@ -8,6 +8,15 @@ import datetime
 class UserDAO(BaseDAO):
     model = models.user.User
 
+    @classmethod
+    async def get_by_username(cls, db: AsyncSession, username: str) -> T:
+        query = select(cls.model.__table__).where(cls.model.username == username)
+        result = await db.execute(query)
+        user = result.first()
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        return user
+
 class ProfileDAO(BaseDAO):
     model = models.profile.Profile
 

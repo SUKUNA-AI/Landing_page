@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     ADMIN_USERNAME: str
     ADMIN_PASSWORD: str
     ADMIN_EMAIL: str
+    TELEGRAM_BOT_TOKEN: str
+
     @model_validator(mode='after')
     def get_database_url(self):
         self.DATABASE_URL = f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"

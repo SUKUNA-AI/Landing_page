@@ -9,13 +9,22 @@ class UserDAO(BaseDAO):
     model = models.user.User
 
     @classmethod
-    async def get_by_username(cls, db: AsyncSession, username: str) -> T:
-        query = select(cls.model.__table__).where(cls.model.username == username)
+    async def get_by_username(cls, db: AsyncSession, username: str) -> T | None:
+        query = select(cls.model).where(cls.model.username == username)
         result = await db.execute(query)
-        user = result.first()
-        if user is None:
-            raise HTTPException(status_code=404, detail="User not found")
-        return user
+        return result.scalar_one_or_none()
+
+    @classmethod
+    async def create(cls, db: AsyncSession, data: dict) -> T:
+        query = insert(cls.model.__table__).values(**data)
+        result = await db.execute(query)
+        await db.commit()
+        query = select(cls.model.__table__).where(cls.model.id == result.inserted_primary_key[0])
+        result = await db.execute(query)
+        item = result.fetchone()
+        if item is None:
+            raise HTTPException(status_code=404, detail="User not found after creation")
+        return item
 
 class ProfileDAO(BaseDAO):
     model = models.profile.Profile

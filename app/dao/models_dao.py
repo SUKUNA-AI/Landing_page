@@ -4,6 +4,8 @@ from fastapi import HTTPException
 from .base_dao import BaseDAO, T
 from .. import models
 import datetime
+from aiogram import Bot
+
 
 class UserDAO(BaseDAO):
     model = models.user.User
@@ -32,8 +34,25 @@ class ProfileDAO(BaseDAO):
 class SkillDAO(BaseDAO):
     model = models.skills.Skill
 
+
 class ProjectDAO(BaseDAO):
     model = models.projects.Project
+
+    @classmethod
+    async def create(cls, db: AsyncSession, data: dict, bot: Bot = None) -> T:
+        query = insert(cls.model.__table__).values(**data)
+        result = await db.execute(query)
+        await db.commit()
+        query = select(cls.model.__table__).where(cls.model.id == result.inserted_primary_key[0])
+        result = await db.execute(query)
+        item = result.fetchone()
+        if item is None:
+            raise HTTPException(status_code=404, detail="Project not found after creation")
+
+        if bot:  # Отправляем уведомление, если bot передан
+            from app.telegram_bot.notifications import notify_subscribers_new_project
+            await notify_subscribers_new_project(bot, item)
+        return item
 
 class BlogPostDAO(BaseDAO):
     model = models.blog_posts.BlogPost

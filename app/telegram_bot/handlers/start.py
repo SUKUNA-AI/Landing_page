@@ -14,7 +14,7 @@ async def cmd_start(message: Message):
 
     async for db in get_db():
         try:
-            subscriber = await TelegramSubscriberDAO.get_by_id(db, telegram_user_id)
+            subscriber = await TelegramSubscriberDAO.get_by_telegram_user_id(db, telegram_user_id)
             if not subscriber:
                 await TelegramSubscriberDAO.create(db, {"telegram_user_id": telegram_user_id})
                 await message.answer("Добро пожаловать! Вы успешно зарегистрированы.")

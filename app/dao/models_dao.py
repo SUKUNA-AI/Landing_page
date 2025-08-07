@@ -49,9 +49,29 @@ class ProjectDAO(BaseDAO):
         if item is None:
             raise HTTPException(status_code=404, detail="Project not found after creation")
 
-        if bot:  # Отправляем уведомление, если bot передан
-            from app.telegram_bot.notifications import notify_subscribers_new_project
-            await notify_subscribers_new_project(bot, item)
+        if bot:
+            from app.telegram_bot.notifications import notify_subscribers_project
+            await notify_subscribers_project(bot, item, event_type="new")
+        return item
+
+    @classmethod
+    async def update(cls, db: AsyncSession, project_id: int, data: dict, bot: Bot = None) -> T:
+        update_data = {k: v for k, v in data.items() if v is not None}
+        query = (
+            cls.model.__table__.update()
+            .where(cls.model.id == project_id)
+            .values(**update_data)
+            .returning(cls.model.__table__)
+        )
+        result = await db.execute(query)
+        await db.commit()
+        item = result.first()
+        if item is None:
+            raise HTTPException(status_code=404, detail="Project not found after update")
+
+        if bot:
+            from app.telegram_bot.notifications import notify_subscribers_project
+            await notify_subscribers_project(bot, item, event_type="update")
         return item
 
 class BlogPostDAO(BaseDAO):

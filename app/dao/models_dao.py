@@ -140,6 +140,22 @@ class TelegramSubscriberDAO(BaseDAO):
     model = models.telegram_subscribers.TelegramSubscriber
 
     @classmethod
+    async def get_by_telegram_user_id(cls, db: AsyncSession, telegram_user_id: str) -> T | None:
+        query = select(cls.model).where(cls.model.telegram_user_id == telegram_user_id)
+        result = await db.execute(query)
+        return result.scalar_one_or_none()
+
+    @classmethod
+    async def create(cls, db: AsyncSession, data: dict) -> T:
+        query = insert(cls.model.__table__).values(**data).returning(cls.model.__table__)
+        result = await db.execute(query)
+        await db.commit()
+        item = result.fetchone()
+        if item is None:
+            raise HTTPException(status_code=404, detail="Subscriber not found after creation")
+        return item
+
+    @classmethod
     async def create(cls, db: AsyncSession, data: dict) -> T:
         data["subscribed_at"] = datetime.datetime.utcnow()
         return await super(TelegramSubscriberDAO, cls).create(db, data)

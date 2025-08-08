@@ -1,22 +1,25 @@
 from pydantic import BaseModel
 
-class UserCreate(BaseModel):
+class UserBase(BaseModel):
     username: str
-    password_hash: str
     email: str
     role: str
+
+class UserCreate(UserBase):
+    password: str
 
 class UserUpdate(BaseModel):
     username: str | None = None
-    password_hash: str | None = None
+    password: str | None = None
     email: str | None = None
     role: str | None = None
 
-class UserResponse(BaseModel):
+    class Config:
+        from_attributes = True
+
+class UserResponse(UserBase):
     id: int
-    username: str
-    email: str
-    role: str
+    password_hash: str
 
     class Config:
         from_attributes = True

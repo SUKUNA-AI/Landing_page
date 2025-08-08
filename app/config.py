@@ -8,6 +8,17 @@ class Settings(BaseSettings):
     DB_PASS: str
     DB_NAME: str
     DATABASE_URL: str | None = None
+    JWT_SECRET_KEY: str = "your-secret-key-change-this"  # Секретный ключ для JWT
+    QWEN_API_KEY: str = "your-qwen-api-key"  # API-ключ для Qwen
+    ADMIN_USERNAME: str
+    ADMIN_PASSWORD: str
+    ADMIN_EMAIL: str
+    TELEGRAM_BOT_TOKEN: str
+    GEMINI_API_KEY: str
+    CHANNEL_ID: int
+    GITHUB_TOKEN: str
+    GITHUB_USER: str
+    ADMIN_TELEGRAM_ID: int
 
     @model_validator(mode='after')
     def get_database_url(self):
@@ -15,7 +26,8 @@ class Settings(BaseSettings):
         return self
 
     class Config:
-        env_file = "../.env"
+        env_file = ".env"
+        env_file_encoding = 'utf-8'
 
 settings = Settings()
 

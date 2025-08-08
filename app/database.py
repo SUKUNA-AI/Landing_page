@@ -10,5 +10,11 @@ SessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_co
 
 async def get_db():
     async with SessionLocal() as db:
-        yield db
-        await db.close()
+        try:
+            yield db
+        finally:
+            await db.close()
+
+async def shutdown_db():
+    """Закрывает движок при завершении приложения."""
+    await engine.dispose()

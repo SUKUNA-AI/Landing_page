@@ -1,3 +1,5 @@
+from typing import List
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.sync import update
 from sqlalchemy.sql import insert, select
@@ -72,8 +74,33 @@ class ProjectDAO:
                 select(Project).filter_by(project_url=project_data["project_url"])
             )).scalars().first()
 
+
 class BlogPostDAO(BaseDAO):
-    model = models.blog_posts.BlogPost
+    model = models.BlogPost
+
+    @classmethod
+    async def create(cls, db: AsyncSession, data: dict) -> T:
+        query = insert(cls.model.__table__).values(**data)
+        result = await db.execute(query)
+        await db.commit()
+        query = select(cls.model.__table__).where(cls.model.id == result.inserted_primary_key[0])
+        result = await db.execute(query)
+        item = result.fetchone()
+        if item is None:
+            raise HTTPException(status_code=404, detail="BlogPost not found after creation")
+        return item
+
+    @classmethod
+    async def get_by_id(cls, db: AsyncSession, item_id: int) -> T | None:
+        query = select(cls.model.id, cls.model.user_id, cls.model.title, cls.model.content, cls.model.summary).where(cls.model.id == item_id)
+        result = await db.execute(query)
+        return result.first()
+
+    @classmethod
+    async def get_all(cls, db: AsyncSession) -> List[T]:
+        query = select(cls.model.id, cls.model.user_id, cls.model.title, cls.model.content, cls.model.summary)
+        result = await db.execute(query)
+        return result.fetchall()
 
     @classmethod
     async def create(cls, db: AsyncSession, data: dict) -> T:

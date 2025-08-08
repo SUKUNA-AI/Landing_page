@@ -21,8 +21,8 @@ def escape_markdown_v2(text: str) -> str:
     reserved_chars = r'([_\*[\]()~`>#\+-=|{}\.!])'
     text = re.sub(reserved_chars, r'\\\g<1>', text)
     text = re.sub(r'([\\]{2,})', r'\\', text)
-    text = text.replace('\n', '\n\n')
-    return text[:500]
+    text = text.replace('\n', '\n')
+    return text[:4010]
 
 async def load_knowledge_base(db: AsyncSession) -> List[Document]:
     logger.debug("Loading knowledge base...")
@@ -127,13 +127,13 @@ async def get_rag_response(question: str, db: AsyncSession) -> str:
         client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
         logger.debug("Retrieving relevant documents...")
-        retriever = vector_store.as_retriever(search_kwargs={"k": 5})
+        retriever = vector_store.as_retriever(search_kwargs={"k": 7})
         relevant_docs = retriever.get_relevant_documents(question)
-        context = "\n\n".join([doc.page_content for doc in relevant_docs])
+        context = "\n".join([doc.page_content for doc in relevant_docs])
 
         prompt = PromptTemplate(
             input_variables=["context", "question"],
-            template="Ты ассистент для портфолио IT-специалиста. Отвечай профессионально, но доступно, без сленга. Максимум 7000 символов. Используй эмодзи (🔥🚀💻) для акцента. Контекст: {context}\n\nВопрос: {question}\n\nОтвет:"
+            template="Ты ассистент для портфолио IT-специалиста. Отвечай профессионально, но доступно, без сленга. Максимум 4000 символов. Используй эмодзи (🔥🚀💻) для акцента. Контекст: {context}\n\nВопрос: {question}\n\nОтвет:"
         ).format(context=context, question=question)
 
         logger.debug("Generating response with Gemini...")

@@ -12,10 +12,10 @@ def escape_markdown_v2(text: str) -> str:
     reserved_chars = r'([_\*[\]()~`>#\+-=|{}\.!])'
     text = re.sub(reserved_chars, r'\\\g<1>', text)
     text = re.sub(r'([\\]{2,})', r'\\', text)  # Удаляем дублирующиеся слеши
-    return text[:500]
+    return text[:3510]
 
 async def process_text_query(message: Message):
-    query = f"Ты ассистент для портфолио IT-специалиста. Отвечай профессионально, но доступно, без сленга. Максимум 7000 символов. Используй эмодзи для акцента. Вопрос: '{message.text}'"
+    query = f"Ты ассистент для портфолио IT-специалиста. Отвечай профессионально, но доступно, без сленга. Максимум 3500 символов. Используй эмодзи для акцента. Вопрос: '{message.text}'"
     logger.debug(f"Processing query: {query.encode('utf-8')}")
     async for db in get_db():
         try:

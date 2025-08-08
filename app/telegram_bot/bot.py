@@ -5,7 +5,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from app.config import settings
 from app.telegram_bot.handlers import start, rag, channel, projects, help, rag_query
-from app.services.github_service import sync_projects_with_github, close_session
+from app.services.github_service import sync_projects_with_github
 from app.database import get_db, shutdown_db
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,6 @@ async def on_startup(dispatcher: Dispatcher, bot: Bot):
 async def on_shutdown(dispatcher: Dispatcher, bot: Bot):
     logger.info("Shutting down bot...")
     await bot.session.close()  # Закрываем сессию бота
-    await close_session()  # Закрываем aiohttp сессию
     await shutdown_db()
     logger.info("Database engine closed.")
 
@@ -71,7 +70,7 @@ async def main():
         channel.register_channel_handlers(dp, bot)
         projects.register_projects_handlers(dp, bot)
         help.register_help_handlers(dp, bot)
-        rag_query.register_rag_query_handlers(dp)
+        rag_query.register_rag_query_handlers(dp, bot)
         dp.startup.register(on_startup)
         dp.shutdown.register(on_shutdown)
         print("Starting polling...")
@@ -81,7 +80,6 @@ async def main():
         logger.error(f"Failed to start bot: {str(e)}")
         raise
     finally:
-        await close_session()
         await shutdown_db()
 
 if __name__ == "__main__":

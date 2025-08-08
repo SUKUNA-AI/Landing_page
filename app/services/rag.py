@@ -1,19 +1,30 @@
 import datetime
+import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.dao.models_dao import ProjectDAO, SkillDAO, WorkExperienceDAO, EducationDAO, BlogPostDAO, TestimonialDAO, SocialMediaDAO, ProfileDAO, ProjectTagDAO, MessageDAO, MLPredictionDAO
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
-from langchain.prompts import PromptTemplate
-from langchain.docstore.document import Document
 from langchain_community.vectorstores import FAISS
-from langchain.chains import RetrievalQA
+from langchain.docstore.document import Document
+from langchain.prompts import PromptTemplate
+from google import genai
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from app.config import settings
 import logging
+import re
+import aiohttp
+from typing import List
 
 from app.database import get_db
 
 logger = logging.getLogger(__name__)
 
-async def load_knowledge_base(db: AsyncSession):
+def escape_markdown_v2(text: str) -> str:
+    """Экранирует специальные символы для MarkdownV2."""
+    reserved_chars = r'([_\*[\]()~`>#\+-=|{}.!])'
+    text = re.sub(reserved_chars, r'\\\g<1>', text)
+    text = text.replace('\n', '\n\n')  # Двойной перенос для читаемости
+    return text[:500]
+
+async def load_knowledge_base(db: AsyncSession) -> List[Document]:
     logger.debug("Loading knowledge base...")
     try:
         projects = await ProjectDAO.get_all(db)
@@ -24,7 +35,8 @@ async def load_knowledge_base(db: AsyncSession):
         testimonials = await TestimonialDAO.get_all(db)
         social_medias = await SocialMediaDAO.get_all(db)
         profiles = await ProfileDAO.get_all(db)
-        project_tags = await ProjectTagDAO.get_all(db)
+        project_tags = await ProjectTagDAO.get_all_with_tags(db)
+
         logger.debug(f"Loaded {len(projects)} projects, {len(skills)} skills, {len(work_experiences)} experiences")
 
         documents = []
@@ -99,31 +111,51 @@ async def load_knowledge_base(db: AsyncSession):
 async def get_rag_response(question: str, db: AsyncSession) -> str:
     logger.debug(f"Processing RAG query: {question}")
     try:
+        # Загружаем базу знаний
         documents = await load_knowledge_base(db)
         logger.debug("Initializing embeddings...")
         embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=settings.GEMINI_API_KEY)
         logger.debug("Creating vector store...")
         vector_store = FAISS.from_documents(documents, embeddings)
         logger.debug("Initializing LLM...")
-        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=settings.GEMINI_API_KEY)
+        client = genai.Client()
 
-        prompt_template = PromptTemplate(
+        logger.debug("Retrieving relevant documents...")
+        retriever = vector_store.as_retriever(search_kwargs={"k": 5})
+        relevant_docs = retriever.get_relevant_documents(question)
+        context = "\n\n".join([doc.page_content for doc in relevant_docs])
+
+        prompt = PromptTemplate(
             input_variables=["context", "question"],
             template="Ты ассистент Ильи Коряева, IT-гуру 2025 года. Отвечай дерзко, с юмором (например, 'Баги? Это фичи!'). Используй сленг ('залетай', 'качаем') и эмодзи (🔥🚀💻). Не больше 500 символов.\n\nКонтекст: {context}\n\nВопрос: {question}\n\nОтвет:"
-        )
-        logger.debug("Creating QA chain...")
-        qa_chain = RetrievalQA.from_chain_type(
-            llm=llm,
-            chain_type="stuff",
-            retriever=vector_store.as_retriever(),
-            chain_type_kwargs={"prompt": prompt_template}
-        )
+        ).format(context=context, question=question)
 
-        logger.debug("Running QA chain...")
-        response = qa_chain.run(question)
-        if not response:
+        logger.debug("Generating response with Gemini...")
+        # Асинхронный контекст для синхронного вызова
+        response = await asyncio.get_event_loop().run_in_executor(
+            None,
+            lambda: client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt
+            )
+        )
+        answer = response.text.strip()
+
+        if not answer:
             logger.warning("Gemini response is empty")
-            return "Баги? Это фичи! 😎 Но ответа пока нет, залетай позже! 🚀"
+            return escape_markdown_v2("Баги? Это фичи! 😎 Но ответа пока нет, залетай позже! 🚀")
+
+        # Интеграция с сайтом (задел)
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post("http://your-site/api/query", json={"query": question, "response": answer}) as resp:
+                    if resp.status == 200:
+                        logger.debug(f"API response: {await resp.text()}")
+                    else:
+                        logger.warning(f"API call failed: {resp.status}")
+        except Exception as e:
+            logger.error(f"API error: {str(e)}")
+
         logger.debug("Saving message and prediction...")
         async for db in get_db():
             await MessageDAO.create(db, {
@@ -135,12 +167,14 @@ async def get_rag_response(question: str, db: AsyncSession) -> str:
             })
             await MLPredictionDAO.create(db, {
                 "input_text": question,
-                "prediction": response,
+                "prediction": answer,
                 "created_at": datetime.datetime.utcnow()
             })
             break  # Используем одну сессию
-        logger.info(f"RAG response generated: {response[:100]}...")
-        return response
+
+        logger.info(f"RAG response generated: {answer[:100]}...")
+        return escape_markdown_v2(answer)
+
     except Exception as e:
         logger.error(f"Unexpected error processing RAG query: {str(e)}")
-        return "Произошла ошибка при обработке вопроса. Попробуй позже! 😕"
+        return escape_markdown_v2("Произошла ошибка при обработке вопроса. Попробуй позже! 😕")

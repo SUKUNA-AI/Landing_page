@@ -71,7 +71,7 @@ async def start_autoposting(bot: Bot):
     async def scheduled_update():
         while True:
             await check_and_post_updates(bot)
-            await asyncio.sleep(60)  # Раз в час
+            await asyncio.sleep(259200)  # Раз в 3 дня
 
     logger.info("Starting autoposting task...")
     asyncio.create_task(scheduled_update())

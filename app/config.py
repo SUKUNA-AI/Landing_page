@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     ADMIN_PASSWORD: str
     ADMIN_EMAIL: str
     TELEGRAM_BOT_TOKEN: str
+    GEMINI_API_KEY: str
+    CHANNEL_ID: str
+    GITHUB_TOKEN: str
+    GITHUB_USER: str
+    ADMIN_TELEGRAM_ID: str
 
     @model_validator(mode='after')
     def get_database_url(self):

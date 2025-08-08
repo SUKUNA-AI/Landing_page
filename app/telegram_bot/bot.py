@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import sys
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from app.config import settings
@@ -29,7 +30,7 @@ async def on_startup(dispatcher: Dispatcher, bot: Bot):
 
 async def on_shutdown(dispatcher: Dispatcher, bot: Bot):
     logger.info("Shutting down bot...")
-    await bot.session.close()  # Закрываем сессию бота
+    await bot.session.close()
     await shutdown_db()
     logger.info("Database engine closed.")
 
@@ -57,8 +58,9 @@ async def main():
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
             handlers=[
                 logging.FileHandler("logs/bot.log", encoding='utf-8'),
-                logging.StreamHandler()
-            ]
+                logging.StreamHandler(sys.stdout)
+            ],
+            encoding='utf-8'
         )
         logger.info("Starting bot initialization")
         print("Creating Bot instance...")

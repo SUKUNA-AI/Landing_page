@@ -1,4 +1,4 @@
-from aiogram import Dispatcher
+from aiogram import Dispatcher, Bot
 from aiogram.filters import Command
 from aiogram.types import Message
 from app.database import get_db
@@ -12,21 +12,21 @@ async def cmd_projects(message: Message):
         try:
             projects = await ProjectDAO.get_all(db)
             if not projects:
-                await message.answer("Пока нет доступных проектов.")
+                await message.answer("Пока нет доступных проектов. 😕")
                 return
 
             response = "Список проектов:\n\n"
             for project in projects:
-                response += f"📌 {project.title}\n"
+                response += f"📌 **{project.title}**\n"
                 response += f"Описание: {project.description or 'Без описания'}\n"
                 if project.project_url:
                     response += f"Ссылка: {project.project_url}\n"
                 response += f"Дата завершения: {project.date_completed or 'Не указана'}\n\n"
-            await message.answer(response)
+            await message.answer(response, parse_mode="Markdown")
         except Exception as e:
             logger.error(f"Error fetching projects: {str(e)}")
-            await message.answer("Произошла ошибка при получении проектов.")
+            await message.answer("Произошла ошибка при получении проектов. 😢")
         break
 
-def register_projects_handlers(dp: Dispatcher):
+def register_projects_handlers(dp: Dispatcher, bot: Bot):
     dp.message.register(cmd_projects, Command("projects"))

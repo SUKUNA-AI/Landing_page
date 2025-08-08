@@ -18,9 +18,11 @@ from app.database import get_db
 logger = logging.getLogger(__name__)
 
 def escape_markdown_v2(text: str) -> str:
-    """Экранирует специальные символы для MarkdownV2."""
+    """Экранирует специальные символы для MarkdownV2, включая точку."""
     reserved_chars = r'([_\*[\]()~`>#\+-=|{}.!])'
     text = re.sub(reserved_chars, r'\\\g<1>', text)
+    # Дополнительно экранируем точку в конце предложений
+    text = re.sub(r'(?<!\\)\.(?=\s|$)', r'\.', text)
     text = text.replace('\n', '\n\n')  # Двойной перенос для читаемости
     return text[:500]
 
@@ -76,7 +78,7 @@ async def load_knowledge_base(db: AsyncSession) -> List[Document]:
             documents.append(Document(page_content=(
                 f"Blog Post: {blogpost.title}\n"
                 f"Content: {blogpost.content or 'No content'}\n"
-                f"Published: {blogpost.created_at or 'Not published'}"
+                f"Summary: {blogpost.summary or 'No summary'}"
             )))
 
         for testimonial in testimonials:
@@ -177,4 +179,4 @@ async def get_rag_response(question: str, db: AsyncSession) -> str:
 
     except Exception as e:
         logger.error(f"Unexpected error processing RAG query: {str(e)}")
-        return escape_markdown_v2("Произошла ошибка при обработке вопроса. Попробуй позже! 😕")
+        return escape_markdown_v2("Баги? Это фичи! 😎 Но что-то пошло не так, залетай позже! 🚀")

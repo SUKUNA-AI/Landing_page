@@ -1,6 +1,6 @@
 from aiogram import Dispatcher, Bot
-from aiogram.filters import Command
 from aiogram.types import Message
+from aiogram.filters import Command
 from app.database import get_db
 from app.dao.models_dao import ProjectDAO
 import logging
@@ -8,25 +8,26 @@ import logging
 logger = logging.getLogger(__name__)
 
 async def cmd_projects(message: Message):
-    async for db in get_db():
-        try:
+    logger.debug("Processing /projects command")
+    try:
+        async for db in get_db():
             projects = await ProjectDAO.get_all(db)
             if not projects:
-                await message.answer("Пока нет доступных проектов. 😕")
+                await message.answer("Пока нет проектов, но скоро зажжём! 🔥", parse_mode="MarkdownV2")
                 return
-
-            response = "Список проектов:\n\n"
+            response = "Мои проекты:\n\n"
             for project in projects:
-                response += f"📌 **{project.title}**\n"
-                response += f"Описание: {project.description or 'Без описания'}\n"
-                if project.project_url:
-                    response += f"Ссылка: {project.project_url}\n"
-                response += f"Дата завершения: {project.date_completed or 'Не указана'}\n\n"
-            await message.answer(response, parse_mode="Markdown")
-        except Exception as e:
-            logger.error(f"Error fetching projects: {str(e)}")
-            await message.answer("Произошла ошибка при получении проектов. 😢")
-        break
+                response += (
+                    f"*{project.title}*\n"
+                    f"{project.description or 'Крутой проект, но описания пока нет!'}\n"
+                    f"[Залетай]({project.project_url or 'https://github.com/SUKUNA-AI'}) 🚀\n\n"
+                )
+            await message.answer(response, parse_mode="MarkdownV2")
+            logger.info(f"Sent projects list to user {message.from_user.id}")
+            break  # Используем одну сессию
+    except Exception as e:
+        logger.error(f"Error processing /projects: {str(e)}")
+        await message.answer("Баги? Это фичи! 😎 Но что-то пошло не так, залетай позже! 🚀", parse_mode="MarkdownV2")
 
 def register_projects_handlers(dp: Dispatcher, bot: Bot):
-    dp.message.register(cmd_projects, Command("projects"))
+    dp.message.register(cmd_projects, Command(commands=["projects"]))

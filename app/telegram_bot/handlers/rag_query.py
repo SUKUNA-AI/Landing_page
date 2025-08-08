@@ -1,4 +1,4 @@
-from aiogram import Dispatcher, F
+from aiogram import Dispatcher, Bot, F
 from aiogram.types import Message
 from app.services.rag import get_rag_response
 from app.database import get_db
@@ -25,5 +25,5 @@ async def process_text_query(message: Message):
             await message.answer(escape_markdown_v2("Баги? Это фичи! 😎 Но что-то пошло не так, залетай позже! 🚀"), parse_mode="MarkdownV2")
         break  # Используем одну сессию
 
-def register_rag_query_handlers(dp: Dispatcher):
+def register_rag_query_handlers(dp: Dispatcher, bot: Bot):
     dp.message.register(process_text_query, F.text & ~F.text.startswith(("/", "!")))

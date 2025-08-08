@@ -11,25 +11,10 @@ from app.models import Project, User
 logger = logging.getLogger(__name__)
 
 FIXED_USER_ID = 1  # Используем user_id=1, так как он есть в базе
-_session = None  # Глобальная сессия для повторного использования
-
-async def get_session():
-    """Возвращает или создаёт глобальную aiohttp сессию."""
-    global _session
-    if _session is None:
-        _session = aiohttp.ClientSession()
-    return _session
-
-async def close_session():
-    """Закрывает глобальную aiohttp сессию."""
-    global _session
-    if _session is not None:
-        await _session.close()
-        _session = None
 
 async def get_repo_description(repo_name: str) -> Dict[str, str]:
     """Получает описание репозитория с GitHub."""
-    async with await get_session() as session:
+    async with aiohttp.ClientSession() as session:
         headers = {"Authorization": f"token {settings.GITHUB_TOKEN}"}
         url = f"https://api.github.com/repos/{settings.GITHUB_USER}/{repo_name}"
         try:
@@ -57,7 +42,7 @@ async def get_repo_description(repo_name: str) -> Dict[str, str]:
 
 async def fetch_repos() -> List[Dict]:
     """Получает список всех репозиториев пользователя с GitHub."""
-    async with await get_session() as session:
+    async with aiohttp.ClientSession() as session:
         headers = {"Authorization": f"token {settings.GITHUB_TOKEN}"}
         url = f"https://api.github.com/users/{settings.GITHUB_USER}/repos"
         try:
@@ -81,7 +66,7 @@ async def fetch_repos() -> List[Dict]:
 
 async def get_default_branch(repo_name: str) -> Optional[str]:
     """Получает основную ветку репозитория."""
-    async with await get_session() as session:
+    async with aiohttp.ClientSession() as session:
         headers = {"Authorization": f"token {settings.GITHUB_TOKEN}"}
         url = f"https://api.github.com/repos/{settings.GITHUB_USER}/{repo_name}"
         try:
@@ -99,7 +84,7 @@ async def get_latest_commits(repo_name: str, branch: Optional[str] = None) -> Li
     """Получает последние 5 коммитов из указанного репозитория и ветки."""
     if not branch:
         branch = await get_default_branch(repo_name)
-    async with await get_session() as session:
+    async with aiohttp.ClientSession() as session:
         headers = {"Authorization": f"token {settings.GITHUB_TOKEN}"}
         url = f"https://api.github.com/repos/{settings.GITHUB_USER}/{repo_name}/commits?sha={branch}"
         try:

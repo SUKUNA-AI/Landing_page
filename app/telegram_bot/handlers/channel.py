@@ -15,6 +15,7 @@ def escape_markdown_v2(text: str) -> str:
     return re.sub(reserved_chars, r'\\\g<1>', text)
 
 async def cmd_postupdate(message: Message, bot: Bot):
+    logger.info(f"Admin ID: {settings.ADMIN_TELEGRAM_ID}, User ID: {message.from_user.id}")
     if message.from_user.id != settings.ADMIN_TELEGRAM_ID:
         await message.answer(escape_markdown_v2("Только админ может постить обновления! 😎"), parse_mode="MarkdownV2")
         logger.warning(f"Unauthorized post attempt by user {message.from_user.id}")

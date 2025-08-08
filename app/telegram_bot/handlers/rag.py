@@ -8,15 +8,12 @@ import re
 
 logger = logging.getLogger(__name__)
 
-def escape_markdown(text: str) -> str:
-    """Экранирует специальные символы Markdown и удаляет некорректные сущности."""
-    # Экранируем специальные символы Telegram Markdown
-    reserved_chars = r'[_*[]()~`>#+-=|{}.!]'
-    text = re.sub(reserved_chars, r'\\\g<0>', text)
-    # Удаляем незакрытые Markdown-теги
-    text = re.sub(r'\[(.*?)\]\((.*?)(?<!\))', r'\g<1>', text)
+def escape_markdown_v2(text: str) -> str:
+    """Экранирует специальные символы для MarkdownV2."""
+    reserved_chars = r'([_\*[\]()~`>#\+-=|{}.!])'
+    text = re.sub(reserved_chars, r'\\\g<1>', text)
     text = text.replace('\n', '\n\n')  # Двойной перенос для читаемости
-    return text[:500]  # Ограничиваем длину
+    return text[:500]
 
 async def format_post_with_gemini(repo_name: str, commits: list) -> str:
     """Форматирует пост для Telegram с помощью Gemini-2.5-flash."""
@@ -34,18 +31,18 @@ async def format_post_with_gemini(repo_name: str, commits: list) -> str:
             fallback = (
                 f"🆕 Свежак в *{repo_name}*! 🔥 "
                 f"Коммиты: {', '.join([c['message'][:30] + '...' for c in commits[:3]]) or 'Пока тихо'}. "
-                f"[Залетай](https://github.com/{settings.GITHUB_USER}/{repo_name}) 🚀"
+                f"[Залетай](https://github.com/{settings.GITHUB_USER}/{repo_name}) \\🚀"
             )
-            return escape_markdown(fallback)
-        return escape_markdown(response.content)
+            return escape_markdown_v2(fallback)
+        return escape_markdown_v2(response.content)
     except Exception as e:
         logger.error(f"Gemini error: {str(e)}")
         fallback = (
             f"🆕 Свежак в *{repo_name}*! 🔥 "
             f"Коммиты: {', '.join([c['message'][:30] + '...' for c in commits[:3]]) or 'Пока тихо'}. "
-            f"[Залетай](https://github.com/{settings.GITHUB_USER}/{repo_name}) 🚀"
+            f"[Залетай](https://github.com/{settings.GITHUB_USER}/{repo_name}) \\🚀"
         )
-        return escape_markdown(fallback)
+        return escape_markdown_v2(fallback)
 
 async def check_and_post_updates(bot: Bot):
     repo_name = await find_latest_active_repo()

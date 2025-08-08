@@ -18,11 +18,9 @@ from app.database import get_db
 logger = logging.getLogger(__name__)
 
 def escape_markdown_v2(text: str) -> str:
-    """Экранирует специальные символы для MarkdownV2, включая точку."""
-    reserved_chars = r'([_\*[\]()~`>#\+-=|{}.!])'
+    """Экранирует специальные символы для MarkdownV2."""
+    reserved_chars = r'([_\*[\]()~`>#\+-=|{}\.!])'
     text = re.sub(reserved_chars, r'\\\g<1>', text)
-    # Дополнительно экранируем точку в конце предложений
-    text = re.sub(r'(?<!\\)\.(?=\s|$)', r'\.', text)
     text = text.replace('\n', '\n\n')  # Двойной перенос для читаемости
     return text[:500]
 

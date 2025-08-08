@@ -1,8 +1,7 @@
 import datetime
 import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.dao.models_dao import ProjectDAO, SkillDAO, WorkExperienceDAO, EducationDAO, BlogPostDAO, TestimonialDAO, \
-    SocialMediaDAO, ProfileDAO, ProjectTagDAO, MessageDAO, MLPredictionDAO
+from app.dao.models_dao import ProjectDAO, SkillDAO, WorkExperienceDAO, EducationDAO, BlogPostDAO, TestimonialDAO, SocialMediaDAO, ProfileDAO, ProjectTagDAO, MessageDAO, MLPredictionDAO
 from langchain_community.vectorstores import FAISS
 from langchain.docstore.document import Document
 from langchain.prompts import PromptTemplate
@@ -17,15 +16,13 @@ from app.database import get_db
 
 logger = logging.getLogger(__name__)
 
-
 def escape_markdown_v2(text: str) -> str:
     """Экранирует специальные символы для MarkdownV2 в Telegram."""
     reserved_chars = r'([_\*[\]()~`>#\+-=|{}\.!])'
     text = re.sub(reserved_chars, r'\\\g<1>', text)
-    text = re.sub(r'([\\]{2,})', r'\\', text)  # Удаляем дублирующиеся слеши
-    text = text.replace('\n', '\n\n')  # Двойной перенос для читаемости
+    text = re.sub(r'([\\]{2,})', r'\\', text)
+    text = text.replace('\n', '\n\n')
     return text[:500]
-
 
 async def load_knowledge_base(db: AsyncSession) -> List[Document]:
     logger.debug("Loading knowledge base...")
@@ -110,18 +107,14 @@ async def load_knowledge_base(db: AsyncSession) -> List[Document]:
         logger.error(f"Error loading knowledge base: {str(e)}")
         raise
 
-
 async def get_rag_response(question: str, db: AsyncSession) -> str:
     logger.debug(f"Processing RAG query: {question}")
     try:
-        # Проверяем наличие API-ключа
         if not settings.GEMINI_API_KEY:
             logger.error("GEMINI_API_KEY is not set in settings")
             raise ValueError("GEMINI_API_KEY is missing")
 
         logger.debug(f"GEMINI_API_KEY: {settings.GEMINI_API_KEY[:5]}... (masked)")
-
-        # Загружаем базу знаний
         documents = await load_knowledge_base(db)
         logger.debug("Initializing embeddings...")
         embeddings = GoogleGenerativeAIEmbeddings(
@@ -131,8 +124,6 @@ async def get_rag_response(question: str, db: AsyncSession) -> str:
         logger.debug("Creating vector store...")
         vector_store = FAISS.from_documents(documents, embeddings)
         logger.debug("Initializing LLM...")
-
-        # Явно передаём API-ключ в клиент
         client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
         logger.debug("Retrieving relevant documents...")
@@ -154,34 +145,35 @@ async def get_rag_response(question: str, db: AsyncSession) -> str:
             )
         )
         answer = response.text.strip()
+        answer = answer.encode('utf-8', errors='replace').decode('utf-8')
         logger.debug(f"Raw Gemini response: {answer[:100]}...")
 
         if not answer:
             logger.warning("Gemini response is empty")
             return escape_markdown_v2("Баги? Это фичи! 😎 Но ответа пока нет, залетай позже! 🚀")
 
-        # Интеграция с сайтом (задел)
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post("http://your-site/api/query",
-                                        json={"query": question, "response": answer}) as resp:
-                    if resp.status == 200:
-                        logger.debug(f"API response: {await resp.text()}")
-                    else:
-                        logger.warning(f"API call failed: {resp.status}")
-        except Exception as e:
-            logger.error(f"API error: {str(e)}")
+        # Закомментировано, так как API сайта не готов
+        # try:
+        #     async with aiohttp.ClientSession() as session:
+        #         async with session.post("http://your-site/api/query", json={"query": question, "response": answer}) as resp:
+        #             if resp.status == 200:
+        #                 logger.debug(f"API response: {await resp.text()}")
+        #             else:
+        #                 logger.warning(f"API call failed: {resp.status}")
+        # except Exception as e:
+        #     logger.error(f"API error: {str(e)}")
 
         logger.debug("Saving message and prediction...")
         async for db in get_db():
-            await MessageDAO.create(db, {
+            message = await MessageDAO.create(db, {
                 "name": "RAG User",
                 "email": "bot@portfolio.com",
                 "message": question,
                 "source": "rag",
-                "created_at": datetime.datetime.utcnow()
+                "date_sent": datetime.datetime.utcnow()  # Исправлено на date_sent
             })
             await MLPredictionDAO.create(db, {
+                "message_id": message.id,  # Добавляем связь с messages
                 "input_text": question,
                 "prediction": answer,
                 "created_at": datetime.datetime.utcnow()

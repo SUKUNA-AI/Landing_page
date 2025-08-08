@@ -12,15 +12,15 @@ import logging
 import re
 import aiohttp
 from typing import List
-
 from app.database import get_db
 
 logger = logging.getLogger(__name__)
 
 def escape_markdown_v2(text: str) -> str:
-    """Экранирует специальные символы для MarkdownV2."""
+    """Экранирует специальные символы для MarkdownV2 в Telegram."""
     reserved_chars = r'([_\*[\]()~`>#\+-=|{}\.!])'
     text = re.sub(reserved_chars, r'\\\g<1>', text)
+    text = re.sub(r'([\\]{2,})', r'\\', text)  # Удаляем дублирующиеся слеши
     text = text.replace('\n', '\n\n')  # Двойной перенос для читаемости
     return text[:500]
 
@@ -114,11 +114,14 @@ async def get_rag_response(question: str, db: AsyncSession) -> str:
         # Загружаем базу знаний
         documents = await load_knowledge_base(db)
         logger.debug("Initializing embeddings...")
-        embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=settings.GEMINI_API_KEY)
+        embeddings = GoogleGenerativeAIEmbeddings(
+            model="models/embedding-001",
+            google_api_key=settings.GEMINI_API_KEY
+        )
         logger.debug("Creating vector store...")
         vector_store = FAISS.from_documents(documents, embeddings)
         logger.debug("Initializing LLM...")
-        client = genai.Client()
+        client = genai.Client()  # API-ключ подтягивается из окружения
 
         logger.debug("Retrieving relevant documents...")
         retriever = vector_store.as_retriever(search_kwargs={"k": 5})
@@ -131,7 +134,6 @@ async def get_rag_response(question: str, db: AsyncSession) -> str:
         ).format(context=context, question=question)
 
         logger.debug("Generating response with Gemini...")
-        # Асинхронный контекст для синхронного вызова
         response = await asyncio.get_event_loop().run_in_executor(
             None,
             lambda: client.models.generate_content(
@@ -140,6 +142,7 @@ async def get_rag_response(question: str, db: AsyncSession) -> str:
             )
         )
         answer = response.text.strip()
+        logger.debug(f"Raw Gemini response: {answer[:100]}...")
 
         if not answer:
             logger.warning("Gemini response is empty")

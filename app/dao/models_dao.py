@@ -1,10 +1,13 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.sync import update
 from sqlalchemy.sql import insert, select
 from fastapi import HTTPException
 from .base_dao import BaseDAO, T
 from .. import models
 import datetime
 from aiogram import Bot
+
+from ..models import Project
 
 
 class UserDAO(BaseDAO):
@@ -35,44 +38,39 @@ class SkillDAO(BaseDAO):
     model = models.skills.Skill
 
 
-class ProjectDAO(BaseDAO):
-    model = models.projects.Project
-
-    @classmethod
-    async def create(cls, db: AsyncSession, data: dict, bot: Bot = None) -> T:
-        query = insert(cls.model.__table__).values(**data)
-        result = await db.execute(query)
+class ProjectDAO:
+    @staticmethod
+    async def create(db: AsyncSession, project_data: dict):
+        stmt = insert(Project).values(**project_data)
+        await db.execute(stmt)
         await db.commit()
-        query = select(cls.model.__table__).where(cls.model.id == result.inserted_primary_key[0])
-        result = await db.execute(query)
-        item = result.fetchone()
-        if item is None:
-            raise HTTPException(status_code=404, detail="Project not found after creation")
 
-        if bot:
-            from app.telegram_bot.notifications import notify_subscribers_project
-            await notify_subscribers_project(bot, item, event_type="new")
-        return item
+    @staticmethod
+    async def get_all(db: AsyncSession):
+        result = await db.execute(select(Project))
+        return result.scalars().all()
 
-    @classmethod
-    async def update(cls, db: AsyncSession, project_id: int, data: dict, bot: Bot = None) -> T:
-        update_data = {k: v for k, v in data.items() if v is not None}
-        query = (
-            cls.model.__table__.update()
-            .where(cls.model.id == project_id)
-            .values(**update_data)
-            .returning(cls.model.__table__)
+    @staticmethod
+    async def create_or_update(db: AsyncSession, project_data: dict):
+        result = await db.execute(
+            select(Project).filter_by(project_url=project_data["project_url"])
         )
-        result = await db.execute(query)
-        await db.commit()
-        item = result.first()
-        if item is None:
-            raise HTTPException(status_code=404, detail="Project not found after update")
-
-        if bot:
-            from app.telegram_bot.notifications import notify_subscribers_project
-            await notify_subscribers_project(bot, item, event_type="update")
-        return item
+        project = result.scalars().first()
+        if project:
+            await db.execute(
+                update(Project)
+                .where(Project.project_url == project_data["project_url"])
+                .values(**project_data)
+            )
+            await db.commit()
+            return project
+        else:
+            stmt = insert(Project).values(**project_data)
+            await db.execute(stmt)
+            await db.commit()
+            return (await db.execute(
+                select(Project).filter_by(project_url=project_data["project_url"])
+            )).scalars().first()
 
 class BlogPostDAO(BaseDAO):
     model = models.blog_posts.BlogPost

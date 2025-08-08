@@ -20,7 +20,7 @@ async def format_post_with_gemini(repo_name: str, commits: list) -> str:
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=settings.GEMINI_API_KEY)
     prompt = (
         f"Создай дерзкий и весёлый пост для Telegram о свежих коммитах в репо {repo_name}. "
-        f"Используй сленг ('залетай', 'качаем') и эмодзи (🔥🚀💻). Макс. 500 символов. "
+        f"Используй сленг из повседневной жизни и эмодзи (🔥🚀💻). Макс. 1500 символов. "
         f"Коммиты: {', '.join([c['message'] for c in commits])}. "
         f"URL репо: https://github.com/{settings.GITHUB_USER}/{repo_name}"
     )

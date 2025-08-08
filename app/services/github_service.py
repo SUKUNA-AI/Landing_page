@@ -23,20 +23,22 @@ async def get_repo_description(repo_name: str) -> Dict[str, str]:
                     logger.error(f"Failed to fetch repo {repo_name}: {response.status}")
                     return {
                         "name": repo_name,
-                        "description": "Крутой проект, но описания пока нет!",
+                        "description": "Крутой проект, но описания пока нет!".encode('utf-8', errors='replace').decode('utf-8'),
                         "url": f"https://github.com/{settings.GITHUB_USER}/{repo_name}"
                     }
                 repo = await response.json()
+                description = repo.get("description", "Крутой проект, но описания пока нет!")
+                description = description.encode('utf-8', errors='replace').decode('utf-8') if description else "Крутой проект, но описания пока нет!"
                 return {
                     "name": repo["name"],
-                    "description": repo["description"] or "Крутой проект, но описания пока нет!",
+                    "description": description,
                     "url": repo["html_url"]
                 }
         except ClientError as e:
             logger.error(f"Network error fetching repo {repo_name}: {str(e)}")
             return {
                 "name": repo_name,
-                "description": "Крутой проект, но описания пока нет!",
+                "description": "Крутой проект, но описания пока нет!".encode('utf-8', errors='replace').decode('utf-8'),
                 "url": f"https://github.com/{settings.GITHUB_USER}/{repo_name}"
             }
 
@@ -54,7 +56,7 @@ async def fetch_repos() -> List[Dict]:
                 return [
                     {
                         "name": repo["name"],
-                        "description": repo["description"],
+                        "description": repo["description"].encode('utf-8', errors='replace').decode('utf-8') if repo["description"] else "Крутой проект, но описания пока нет!".encode('utf-8', errors='replace').decode('utf-8'),
                         "html_url": repo["html_url"],
                         "pushed_at": repo["pushed_at"]
                     }
@@ -82,8 +84,6 @@ async def get_default_branch(repo_name: str) -> Optional[str]:
 
 async def get_latest_commits(repo_name: str, branch: Optional[str] = None) -> List[Dict]:
     """Получает последние 5 коммитов из указанного репозитория и ветки."""
-    if not branch:
-        branch = await get_default_branch(repo_name)
     async with aiohttp.ClientSession() as session:
         headers = {"Authorization": f"token {settings.GITHUB_TOKEN}"}
         url = f"https://api.github.com/repos/{settings.GITHUB_USER}/{repo_name}/commits?sha={branch}"
@@ -99,13 +99,13 @@ async def get_latest_commits(repo_name: str, branch: Optional[str] = None) -> Li
                     async with session.get(commit_url, headers=headers) as commit_response:
                         if commit_response.status == 200:
                             commit_data = await commit_response.json()
-                            files = [file["filename"] for file in commit_data.get("files", [])]
+                            files = [file["filename"].encode('utf-8', errors='replace').decode('utf-8') for file in commit_data.get("files", [])]
                         else:
                             files = []
                             logger.warning(f"Failed to fetch commit details {commit_url}: {commit_response.status}")
                     commit_details.append({
-                        "message": commit["commit"]["message"],
-                        "author": commit["commit"]["author"]["name"],
+                        "message": commit["commit"]["message"].encode('utf-8', errors='replace').decode('utf-8'),
+                        "author": commit["commit"]["author"]["name"].encode('utf-8', errors='replace').decode('utf-8'),
                         "url": commit["html_url"],
                         "files": files
                     })
@@ -127,6 +127,7 @@ async def ensure_user_exists(session: AsyncSession, user_id: int, username: str)
     """Проверяет наличие пользователя в БД и создаёт его, если не существует."""
     result = await session.execute(select(User).filter_by(id=user_id))
     user = result.scalars().first()
+    username = username.encode('utf-8', errors='replace').decode('utf-8')
     if not user:
         new_user = User(id=user_id, username=username)
         session.add(new_user)
@@ -137,6 +138,7 @@ async def upsert_project(session: AsyncSession, data: Dict) -> None:
     """Обновляет или создаёт проект в БД."""
     result = await session.execute(select(Project).filter_by(project_url=data["project_url"]))
     project = result.scalars().first()
+    data["description"] = data["description"].encode('utf-8', errors='replace').decode('utf-8')
     if project:
         for key, value in data.items():
             setattr(project, key, value)
@@ -157,7 +159,7 @@ async def sync_projects_with_github(session: AsyncSession) -> None:
         project_data = {
             "user_id": FIXED_USER_ID,
             "title": repo["name"],
-            "description": repo["description"] or "Крутой проект, но описания пока нет!",
+            "description": repo["description"].encode('utf-8', errors='replace').decode('utf-8') or "Крутой проект, но описания пока нет!".encode('utf-8', errors='replace').decode('utf-8'),
             "image_url": None,
             "project_url": repo["html_url"],
             "date_completed": datetime.strptime(repo["pushed_at"], "%Y-%m-%dT%H:%M:%SZ")

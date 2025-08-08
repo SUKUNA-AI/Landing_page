@@ -15,7 +15,7 @@ async def on_startup(dispatcher: Dispatcher, bot: Bot):
     logger.info(f"Bot started with ID: {bot.id}")
     try:
         chat = await bot.get_chat(settings.CHANNEL_ID)
-        logger.info(f"Channel accessible: {chat.id}, {chat.title}")
+        logger.info(f"Channel accessible: {chat.id}, {chat.title.encode('utf-8').decode('utf-8')}")
     except Exception as e:
         logger.error(f"Cannot access channel {settings.CHANNEL_ID}: {str(e)}")
     logger.info("Starting project sync tasks")
@@ -59,10 +59,10 @@ async def main():
             handlers=[
                 logging.FileHandler("logs/bot.log", encoding='utf-8'),
                 logging.StreamHandler(sys.stdout)
-            ],
-            encoding='utf-8'
-        )
+            ]
+)
         logger.info("Starting bot initialization")
+        logger.debug(f"Loaded GEMINI_API_KEY: {settings.GEMINI_API_KEY[:5]}... (masked)")
         print("Creating Bot instance...")
         bot = Bot(token=settings.TELEGRAM_BOT_TOKEN, default=DefaultBotProperties(parse_mode='MarkdownV2'))
         dp = Dispatcher()

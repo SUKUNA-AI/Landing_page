@@ -9,7 +9,7 @@ from .. import models
 import datetime
 from aiogram import Bot
 
-from ..models import Project
+from ..models import Project, BlogPost, ProjectTag, Tag
 
 
 class UserDAO(BaseDAO):
@@ -146,6 +146,12 @@ class ProjectTagDAO(BaseDAO):
         if item is None:
             raise HTTPException(status_code=404, detail="ProjectTag not found after creation")
         return item
+
+    @classmethod
+    async def get_all_with_tags(cls, db: AsyncSession) -> List[T]:
+        query = select(ProjectTag.project_id, ProjectTag.tag_id, Tag.tag_name).join(Tag, ProjectTag.tag_id == Tag.id)
+        result = await db.execute(query)
+        return result.fetchall()
 
 class MessageDAO(BaseDAO):
     model = models.messages.Message

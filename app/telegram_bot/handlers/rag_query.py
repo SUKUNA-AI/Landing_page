@@ -1,7 +1,9 @@
+# В файле app/telegram_bot/handlers/rag_query.py
+# Обновляем для вызова локального API вместо прямого вызова get_rag_response
+
 from aiogram import Dispatcher, Bot, F
 from aiogram.types import Message
-from app.services.rag import get_rag_response
-from app.database import get_db
+import aiohttp
 import logging
 import re
 
@@ -15,19 +17,32 @@ def escape_markdown_v2(text: str) -> str:
     return text[:3510]
 
 async def process_text_query(message: Message):
-    query = f"Ты ассистент для портфолио IT-специалиста. Отвечай профессионально, но доступно, без сленга. Максимум 3500 символов. Используй эмодзи для акцента. Вопрос: '{message.text}'"
+    """
+    Обработчик текстовых запросов к RAG-агенту через Telegram.
+    Вызывает локальный FastAPI эндпоинт /api/rag/.
+    """
+    query = message.text
     logger.debug(f"Processing query: {query.encode('utf-8')}")
-    async for db in get_db():
-        try:
-            response = await get_rag_response(query, db)
-            escaped_response = escape_markdown_v2(response)
-            await message.answer(escaped_response, parse_mode="MarkdownV2")
-            logger.info(f"Replied to query: {message.text}")
-        except Exception as e:
-            logger.error(f"Error processing query '{message.text}': {str(e)}")
-            fallback = "Баги? Это фичи! 😎 Но что-то пошло не так, залетай позже! 🚀"
-            await message.answer(escape_markdown_v2(fallback), parse_mode="MarkdownV2")
-        break
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                "http://localhost:8000/api/rag/",  # Локальный URL FastAPI
+                json={"question": query}
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    response = data["answer"]
+                    escaped_response = escape_markdown_v2(response)
+                    await message.answer(escaped_response, parse_mode="MarkdownV2")
+                    logger.info(f"Replied to query: {query}")
+                else:
+                    logger.error(f"Failed to fetch RAG response: {resp.status}")
+                    fallback = "Баги? Это фичи! 😎 Но что-то пошло не так, залетай позже! 🚀"
+                    await message.answer(escape_markdown_v2(fallback), parse_mode="MarkdownV2")
+    except Exception as e:
+        logger.error(f"Error processing query '{query}': {str(e)}")
+        fallback = "Баги? Это фичи! 😎 Но что-то пошло не так, залетай позже! 🚀"
+        await message.answer(escape_markdown_v2(fallback), parse_mode="MarkdownV2")
 
 def register_rag_query_handlers(dp: Dispatcher, bot: Bot):
     dp.message.register(process_text_query, F.text & ~F.text.startswith(("/", "!")))

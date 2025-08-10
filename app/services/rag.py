@@ -152,16 +152,15 @@ async def get_rag_response(question: str, db: AsyncSession) -> str:
             logger.warning("Gemini response is empty")
             return escape_markdown_v2("Баги? Это фичи! 😎 Но ответа пока нет, залетай позже! 🚀")
 
-        # Закомментировано, так как API сайта не готов
-        # try:
-        #     async with aiohttp.ClientSession() as session:
-        #         async with session.post("http://your-site/api/query", json={"query": question, "response": answer}) as resp:
-        #             if resp.status == 200:
-        #                 logger.debug(f"API response: {await resp.text()}")
-        #             else:
-        #                 logger.warning(f"API call failed: {resp.status}")
-        # except Exception as e:
-        #     logger.error(f"API error: {str(e)}")
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post("http://localhost:8000/api/rag/", json={"query": question, "response": answer}) as resp:
+                    if resp.status == 200:
+                        logger.debug(f"API response: {await resp.text()}")
+                    else:
+                        logger.warning(f"API call failed: {resp.status}")
+        except Exception as e:
+            logger.error(f"API error: {str(e)}")
 
         logger.debug("Saving message and prediction...")
         async for db in get_db():

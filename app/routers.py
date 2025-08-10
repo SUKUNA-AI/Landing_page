@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from .endpoints import (
     users, profiles, skills, projects, blog_posts, tags, post_tags, project_tags,
     messages, social_media, testimonials, telegram_subscribers, subscriber_preferences,
-    polls, education, work_experience, analytics, tasks, ml_predictions
+    polls, education, work_experience, analytics, tasks, ml_predictions, rag
 )
 from app.auth import router as auth_router
 from app.auth import get_current_user
@@ -113,3 +113,4 @@ router.include_router(
 )
 router.include_router(polls.router, prefix="/api", tags=["polls"])
 router.include_router(analytics.router, prefix="/api", tags=["analytics"])
+router.include_router(rag.rag_router, prefix="/api", tags=["rag"])
